@@ -16,7 +16,7 @@
             let totalBytes = 0;
 
             try {
-                const response = await fetch('/download-for-time');
+                const response = await fetch('/files/largefile.bin');
                 const reader = response.body.getReader();
 
                 while (true) {
