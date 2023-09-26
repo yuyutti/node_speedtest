@@ -6,7 +6,7 @@ app.use(express.static('public'));
 
 const dataPool = [];
 const minSize = 1 * 1024 * 1024; // 1MB
-const maxSize = 100 * 1024 * 1024; // 100MB
+const maxSize = 50 * 1024 * 1024; // 50MB
 const numDataItems = 50; // データアイテムの数
 
 for (let i = 0; i < numDataItems; i++) {

@@ -61,7 +61,7 @@
             const uploadedSizes = [];
 
             while (Date.now() < endUploadTime) {
-                const randomSize = Math.floor(Math.random() * (100 * 1024 * 1024 - 1024 + 1) + 1024);
+                const randomSize = Math.floor(Math.random() * (50 * 1024 * 1024 - 1 * 1024 * 1024 + 1) + 1 * 1024 * 1024);
                 const uploadData = new Uint8Array(randomSize).fill(0);
                 await fetch('/upload', {
                     method: 'POST',
