@@ -37,7 +37,7 @@
             let totalDownloadedBytes = 0;
             const downloadedData = [];
             const endDownloadTime = Date.now() + testDuration;
-            
+
             while (Date.now() < endDownloadTime) {
                 const response = await fetch('/download');
                 const reader = response.body.getReader();
@@ -52,25 +52,28 @@
             }
             const downloadTime = Date.now() - startTestTime - 3 * 1000; // total time minus ping test duration
             const currentDownloadSpeed = (totalDownloadedBytes * 8) / (downloadTime / 1000); // bits per second
-            
-            let totalUploadedBytes = 0;
 
             // アップロードテスト
             const endUploadTime = Date.now() + testDuration;
             let dataIndex = 0;
             const uploadedSizes = [];
 
-            while (Date.now() < endUploadTime) {
-                const randomSize = Math.floor(Math.random() * (50 * 1024 * 1024 - 1 * 1024 * 1024 + 1) + 1 * 1024 * 1024);
-                const uploadData = new Uint8Array(randomSize).fill(0);
-                await fetch('/upload', {
+            async function uploadData(data) {
+                const response = await fetch('/upload', {
                     method: 'POST',
-                    body: uploadData
+                    body: data
                 });
-                uploadedSizes.push(randomSize);
-                totalUploadedBytes += randomSize;
+                const size = data.byteLength;
+                uploadedSizes.push(size);
+                totalUploadedBytes += size;
                 const currentUploadSpeed = (totalUploadedBytes * 8) / ((Date.now() - startTestTime - 3 * 1000 - downloadTime) / 1000);
                 updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, currentUploadSpeed, totalUploadedBytes);
+            }
+
+            while (Date.now() < endUploadTime) {
+                const randomSize = Math.floor(Math.random() * (50 * 1024 * 1024 - 1 * 1024 * 1024 + 1) + 1 * 1024 * 1024);
+                const uploadDataItem = new Uint8Array(randomSize).fill(0);
+                uploadData(uploadDataItem);
                 dataIndex++;
             }
             totalUploadedBytes = uploadedSizes.reduce((a, b) => a + b, 0);
