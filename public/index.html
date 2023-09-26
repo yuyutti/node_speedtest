@@ -35,14 +35,16 @@
     
             // ダウンロードテスト
             let totalDownloadedBytes = 0;
+            const downloadedData = [];
             const endDownloadTime = Date.now() + testDuration;
-
+            
             while (Date.now() < endDownloadTime) {
                 const response = await fetch('/download');
                 const reader = response.body.getReader();
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
+                    downloadedData.push(value.buffer);
                     totalDownloadedBytes += value.length;
                     const currentDownloadSpeed = (totalDownloadedBytes * 8) / ((Date.now() - startTestTime) / 1000); // bits per second
                     updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, null, 0);
@@ -55,6 +57,7 @@
 
             // アップロードテスト
             const endUploadTime = Date.now() + testDuration;
+            let dataIndex = 0;
             const uploadedSizes = [];
 
             while (Date.now() < endUploadTime) {
@@ -65,9 +68,10 @@
                     body: uploadData
                 });
                 uploadedSizes.push(randomSize);
-                totalUploadedBytes += randomSize; // ここで更新
+                totalUploadedBytes += randomSize;
                 const currentUploadSpeed = (totalUploadedBytes * 8) / ((Date.now() - startTestTime - 3 * 1000 - downloadTime) / 1000);
                 updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, currentUploadSpeed, totalUploadedBytes);
+                dataIndex++;
             }
             totalUploadedBytes = uploadedSizes.reduce((a, b) => a + b, 0);
             const uploadTime = Date.now() - startTestTime - 3 * 1000 - downloadTime;
