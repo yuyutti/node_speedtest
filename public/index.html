@@ -15,11 +15,11 @@
             const testDuration = 10 * 1000; // 10 seconds
     
             const startTestTime = Date.now();
-    
-            // Pingテスト
-            const pingTimes = [];
+            
+             // Pingテスト
             const endPingTime = Date.now() + 3 * 1000;
-    
+            const pingTimes = [];
+
             while (Date.now() < endPingTime) {
                 const startPing = Date.now();
                 await fetch('/ping');
@@ -29,54 +29,49 @@
                 updateDisplay(averagePingTime, null, 0, null, 0);
                 await new Promise(resolve => setTimeout(resolve, 10));
             }
-    
+
             const averagePingTime = pingTimes.reduce((a, b) => a + b, 0) / pingTimes.length;
+            updateDisplay(averagePingTime, null, 0, null, 0);
     
-            async function downloadTest(testDuration, startTestTime, averagePingTime) {
-                let totalDownloadedBytes = 0;
-                const endDownloadTime = Date.now() + testDuration;
-    
-                while (Date.now() < endDownloadTime) {
-                    const response = await fetch('/download');
-                    const reader = response.body.getReader();
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        totalDownloadedBytes += value.length;
-                        const currentDownloadSpeed = (totalDownloadedBytes * 8) / ((Date.now() - startTestTime) / 1000); // bits per second
-                        updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, null, 0);
-                    }
+            // ダウンロードテスト
+            let totalDownloadedBytes = 0;
+            const endDownloadTime = Date.now() + testDuration;
+
+            while (Date.now() < endDownloadTime) {
+                const response = await fetch('/download');
+                const reader = response.body.getReader();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    totalDownloadedBytes += value.length;
+                    const currentDownloadSpeed = (totalDownloadedBytes * 8) / ((Date.now() - startTestTime) / 1000); // bits per second
+                    updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, null, 0);
                 }
-                const downloadTime = Date.now() - startTestTime - 3 * 1000; // total time minus ping test duration
-                return (totalDownloadedBytes * 8) / (downloadTime / 1000); // bits per second
             }
-    
-            async function uploadTest(testDuration, startTestTime, downloadSpeed, averagePingTime) {
-                let totalUploadedBytes = 0;
-                const endUploadTime = Date.now() + testDuration;
-                const uploadedSizes = [];
-    
-                while (Date.now() < endUploadTime) {
-                    const randomSize = Math.floor(Math.random() * (100 * 1024 * 1024 - 1024 + 1) + 1024);
-                    const uploadData = new Uint8Array(randomSize).fill(0);
-                    await fetch('/upload', {
-                        method: 'POST',
-                        body: uploadData
-                    });
-                    uploadedSizes.push(randomSize);
-                    totalUploadedBytes += randomSize;
-                    const currentUploadSpeed = (totalUploadedBytes * 8) / ((Date.now() - startTestTime - 3 * 1000) / 1000);
-                    updateDisplay(averagePingTime, downloadSpeed, totalUploadedBytes, currentUploadSpeed, totalUploadedBytes);
-                }
-                const uploadTime = Date.now() - startTestTime - 3 * 1000;
-                return (totalUploadedBytes * 8) / (uploadTime / 1000); // bits per second
+            const downloadTime = Date.now() - startTestTime - 3 * 1000; // total time minus ping test duration
+            const currentDownloadSpeed = (totalDownloadedBytes * 8) / (downloadTime / 1000); // bits per second
+            
+            let totalUploadedBytes = 0;
+
+            // アップロードテスト
+            const endUploadTime = Date.now() + testDuration;
+            const uploadedSizes = [];
+
+            while (Date.now() < endUploadTime) {
+                const randomSize = Math.floor(Math.random() * (100 * 1024 * 1024 - 1024 + 1) + 1024);
+                const uploadData = new Uint8Array(randomSize).fill(0);
+                await fetch('/upload', {
+                    method: 'POST',
+                    body: uploadData
+                });
+                uploadedSizes.push(randomSize);
+                totalUploadedBytes += randomSize; // ここで更新
+                const currentUploadSpeed = (totalUploadedBytes * 8) / ((Date.now() - startTestTime - 3 * 1000 - downloadTime) / 1000);
+                updateDisplay(averagePingTime, currentDownloadSpeed, totalDownloadedBytes, currentUploadSpeed, totalUploadedBytes);
             }
-    
-            const downloadSpeed = await downloadTest(testDuration, startTestTime, averagePingTime);
-            const uploadSpeed = await uploadTest(testDuration, startTestTime, downloadSpeed, averagePingTime);
-    
-            console.log(`Download speed: ${downloadSpeed} bps, Upload speed: ${uploadSpeed} bps`);
-    
+            totalUploadedBytes = uploadedSizes.reduce((a, b) => a + b, 0);
+            const uploadTime = Date.now() - startTestTime - 3 * 1000 - downloadTime;
+
             function updateDisplay(ping, downloadSpeed, downloadedData, uploadSpeed, uploadedData) {
                 resultDiv.innerHTML = `
                     <p>Ping: ${ping ? ping.toFixed(2) + 'ms' : 'Calculating...'}</p>
@@ -84,7 +79,8 @@
                     <p>Upload speed: ${uploadSpeed ? formatSpeed(uploadSpeed) : 'Calculating...'} | Data: ${formatSize(uploadedData)}</p>
                 `;
             }
-    
+            
+            // 結果の表示
             function formatSpeed(bitsPerSecond) {
                 if (bitsPerSecond < 1e6) {
                     return (bitsPerSecond / 1e3).toFixed(2) + ' Kbps';
@@ -94,7 +90,7 @@
                     return (bitsPerSecond / 1e9).toFixed(2) + ' Gbps';
                 }
             }
-    
+
             function formatSize(bytes) {
                 if (bytes < 1e6) {
                     return Math.floor(bytes / 1e3) + ' KB';
@@ -104,6 +100,16 @@
                     return (bytes / 1e9).toFixed(1) + ' GB';
                 }
             }
+
+            // 結果の表示
+            const downloadSpeed = (totalDownloadedBytes * 8) / (downloadTime / 1000); // bits per second
+            const uploadSpeed = (totalUploadedBytes * 8) / (uploadTime / 1000); // bits per second
+
+            resultDiv.innerHTML = `
+                <p>Ping: ${averagePingTime.toFixed(2)}ms</p>
+                <p>Download speed: ${formatSpeed(downloadSpeed)} | Data: ${formatSize(totalDownloadedBytes)}</p>
+                <p>Upload speed: ${formatSpeed(uploadSpeed)} | Data: ${formatSize(totalUploadedBytes)}</p>
+            `;
         }
     </script>
 </body>
