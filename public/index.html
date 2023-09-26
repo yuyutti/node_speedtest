@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Test</title>
+</head>
+<body>
+    <button id="testButton">Start Speed Test</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testButton').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            const startTime = Date.now();
+            let totalBytes = 0;
+
+            try {
+                const response = await fetch('/download-for-time');
+                const reader = response.body.getReader();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    totalBytes += value.length;
+                }
+
+                const endTime = Date.now();
+                const duration = (endTime - startTime) / 1000; // in seconds
+                const speedBps = totalBytes * 8 / duration; // bits per second
+                const speedKbps = (speedBps / 1024).toFixed(2);
+                const speedMbps = (speedBps / (1024 * 1024)).toFixed(2);
+                resultDiv.textContent = `Download speed: ${speedMbps} Mbps (${speedKbps} kbps)`;
+            } catch (error) {
+                resultDiv.textContent = 'Error occurred during speed test';
+            }
+        });
+    </script>
+</body>
+</html>
