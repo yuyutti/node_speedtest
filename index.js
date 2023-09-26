@@ -6,21 +6,12 @@ app.use(express.static('public'));
 app.use('/files', express.static('files'));
 
 app.get('/download-for-time', (req, res) => {
-    // 10秒間に送信するデータの量を設定
-    const duration = 10 * 1000; // 10 seconds in milliseconds
-    const chunkSize = 1024 * 1024; // 1MB
-
-    res.setHeader('Transfer-Encoding', 'chunked');
-
-    const interval = setInterval(() => {
-        res.write(Buffer.alloc(chunkSize, '0'));
-    }, 1000); // send 1MB every second
-
-    setTimeout(() => {
-        clearInterval(interval);
-        res.end();
-    }, duration);
+    const chunkSize = 1024 * 1024 * 10; // 10MB
+    res.setHeader('Content-Length', chunkSize);
+    res.write(Buffer.alloc(chunkSize, '0'));
+    res.end();
 });
+
 
 
 app.listen(PORT, () => {
