@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const PORT = 3000;
+const PORT = 4000;
 
 app.use(express.json({ limit: '10mb' })); // ボディのサイズを増やす
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
